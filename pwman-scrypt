@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# (C) 2022 Theodore Huang <msa42@ctemplar.com>
+#
+# This program is free software: you can redistribute it and/or modify it under the terms of
+# the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with this program.
+# If not, see <https://www.gnu.org/licenses/>.
+#
+set -euo pipefail
+
+# General settings
+HASH_CMD=sha256sum
+PWMAN_DIR=~/.local/share/pwman
+
+# Functions
+env_check() {
+  if ! command -v "$1" &> /dev/null
+  then
+    echo "$1 could not be found"
+    exit 1
+  fi
+}
+
+# Main
+env_check scrypt
+
+read -r -sp 'passphrase: ' PASSPHRASE
+
+PASSPHRASE_HASH=$(echo -n "$PASSPHRASE" | "$HASH_CMD" | cut -d " " -f 1 )
+PASSPHRASE_FILE="$PWMAN_DIR/$PASSPHRASE_HASH"
+if [ ! -f "$PASSPHRASE_FILE" ]; then
+  echo -e "\n\nUnrecognized passphrase, you can add a passphrase using 'pwman-add'."
+  exit 1
+fi
+
+export PASSPHRASE
+scrypt "$1" --passphrase env:PASSPHRASE "${@:2}"
